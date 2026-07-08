@@ -1,0 +1,24 @@
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+.venv/
+venv/
+env/
+.env
+
+# Training/evaluation artifacts
+*.pth
+*.pt
+*.ckpt
+train_metrics.csv
+eval_suites/
+runs/
+checkpoints/
+logs/
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
