@@ -1,7 +1,15 @@
 import numpy as np
 
 def pad_obs(obs, max_obs_dim):
+    if obs is None:
+        return np.zeros(max_obs_dim * 6, dtype=np.float32)
+
     obs_arr = np.array(obs, dtype=np.float32)
+    if obs_arr.ndim == 1:
+        return obs_arr.astype(np.float32)
+    if obs_arr.ndim != 2:
+        return np.zeros(max_obs_dim * 6, dtype=np.float32)
+
     n, feat_dim = obs_arr.shape
     # pad 到 (max_obs_dim, feat_dim)
     padded = np.zeros((max_obs_dim, feat_dim), dtype=np.float32)
@@ -103,6 +111,19 @@ class PrioritizedReplayBuffer:
         """当前存储的经验数（缓冲区长度）。"""
         return self.tree.size
 
+    def _is_valid_obs(self, obs):
+        if obs is None:
+            return False
+        arr = np.asarray(obs, dtype=object)
+        return arr.ndim >= 1 and arr.size > 0
+
+    def _valid_indices(self):
+        return [
+            i for i in range(len(self))
+            if self._is_valid_obs(self.data["obs"][i])
+            and self._is_valid_obs(self.data["next_obs"][i])
+        ]
+
     def add(self, obs, act, rew, next_obs, done):
         """向缓冲区添加一个新经验。"""
         # 确定用于新经验的优先级: 使用当前最大优先级，保证新样本至少被采样一次
@@ -127,11 +148,14 @@ class PrioritizedReplayBuffer:
         N = len(self)
         if N == 0:
             raise ValueError("Cannot sample from an empty buffer")
+        valid_indices = self._valid_indices()
+        if not valid_indices:
+            raise ValueError("Cannot sample because the buffer has no valid transitions")
 
         total_p = self.tree.total_priority()
         # 如果 total_p 非法，则退回均匀采样
         if not np.isfinite(total_p) or total_p <= 0:
-            indices = np.random.choice(N, batch_size, replace=(batch_size > N))
+            indices = np.random.choice(valid_indices, batch_size, replace=(batch_size > len(valid_indices)))
             # pad 后再 stack
             states_arr = np.stack([pad_obs(self.data["obs"][i], self.max_obs_dim)
                                    for i in indices]).astype(np.float32)
@@ -154,6 +178,10 @@ class PrioritizedReplayBuffer:
             a, b = segment * i, segment * (i + 1)
             v = np.random.uniform(a, b)
             leaf_idx, p, idx = self.tree.get_leaf(v)
+            if idx >= N or not self._is_valid_obs(self.data["obs"][idx]) or not self._is_valid_obs(self.data["next_obs"][idx]):
+                idx = int(np.random.choice(valid_indices))
+                leaf_idx = idx + self.tree.capacity - 1
+                p = max(float(self.tree.tree[leaf_idx]), self.epsilon)
             batch_idxs.append(idx)
             priorities.append(p)
             raw_states.append(self.data["obs"][idx])
