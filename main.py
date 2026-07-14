@@ -81,7 +81,7 @@ nx.draw_networkx_labels(G, pos)
 # nx.draw_networkx_edge_labels(G, pos, {(edges[i][0],edges[i][1]):edges[i][2] for i in range(len(edges))})
 plt.tight_layout()
 # 指定保存目录
-ckpt_dir = r"D:\Agent_over"
+ckpt_dir = r"D:\Agent_test"
 os.makedirs(ckpt_dir, exist_ok=True)
 
 def main():
@@ -136,7 +136,7 @@ def main():
     target_update_frames = 2000  # 每2000帧同步一次目标网络
     success_rates = []
     reward_history = []  # 存每个 episode 的平均奖励
-    save_dir = r"D:\Agent_over"
+    save_dir = r"D:\Agent_test"
     os.makedirs(save_dir, exist_ok=True)
     csv_path = os.path.join(save_dir, "train_metrics.csv")
 
@@ -145,10 +145,10 @@ def main():
         (2001, 10000, 1000),  # ep 201–1000: 1000 条流
     ]
     # Paper setting: episodes 1-2000 use 200 flows, episodes >=2001 use 700 flows.
-    curriculum[1] = (2001, episodes, 700)
-    current_flow_stage = None
+    # curriculum[1] = (2001, episodes, 700)
+    # current_flow_stage = None
     # 2) 定义“噪声阶段”：简单用布尔标志
-    current_noise_flag = None
+    # current_noise_flag = None
 
     # 3) 占位，后面按需重建
     # flows = None
@@ -194,7 +194,7 @@ def main():
         # else:
         _, _, num_flows = flow_stage
         flows = offline.generate_flow(num_flows)
-        anomaly_prob = 0 # if ep <= 1500 else 1
+        # anomaly_prob = 1 if noise_flag else 0
         # Keep anomaly injection aligned with the staged training description.
         anomaly_prob = 0.1 if noise_flag else 0.0
         env = TSNEnv(G, flows, offline, anomaly_prob=anomaly_prob)
@@ -293,9 +293,9 @@ def main():
         success_rates.append(success)
         avg_reward = np.mean(list(rewards.values()))
         reward_history.append(avg_reward)
-        print(env.fail_stats)
-        print(f"Episode {ep} success rate: {success:.1%}, avg reward: {avg_reward:.2f}, rewards: {list(rewards.values())}:")
-
+        # print(env.fail_stats)
+        # print(f"Episode {ep} success rate: {success:.1%}, avg reward: {avg_reward:.2f}, rewards: {list(rewards.values())}:")
+        print(f"Episode {ep} success rate: {success:.1%}, avg reward: {avg_reward:.2f}")
         # 追加写入 CSV（首行写表头，只在 ep==1 时）
         write_header = (ep == 1 and not os.path.exists(csv_path))
         with open(csv_path, "a", newline="", encoding="utf-8") as f:

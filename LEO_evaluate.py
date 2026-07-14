@@ -210,7 +210,7 @@ def evaluate_once(snapshotter, offline, agents, anomaly_prob=0.0,
                   seed=42, run_idx=1, outdir="eval_suites"):
     set_seed(seed)
     G0, hnodes0 = snapshotter.graph_at(0.0)
-    flows = offline.generate_flow(50)
+    flows = offline.generate_flow(5)
     env = TSNEnv(G0, flows, offline, snapshotter, anomaly_prob=anomaly_prob)
 
     record_suite = True
@@ -525,6 +525,7 @@ def main():
           f"(runs={args.runs}, anomaly={args.anomaly})")
     print("per-run success:", [f"{s * 100:.2f}%" for s in all_scores])
 
+# python LEO_evaluate.py  --ckpt "D:\Agent_test\csqf_agent_ep10000.pth" --runs 5 --seed 500 --outdir eval_suites
 if __name__ == "__main__":
     main()
 
